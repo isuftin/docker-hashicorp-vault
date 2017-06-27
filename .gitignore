@@ -1,0 +1,5 @@
+.DS_Store
+!.keep
+data/registry
+root.crt
+*_local.env

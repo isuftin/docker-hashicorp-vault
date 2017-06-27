@@ -1,0 +1,26 @@
+---
+version: '3'
+
+networks:
+  vault-network:
+
+volumes:
+  dynamodb-volume:
+
+services:
+  dynamodb:
+    build:
+      context: ./dynamodb
+    container_name: vault_dynamodb
+    image: vault_dynamodb
+    networks:
+      vault-network:
+        aliases:
+          - dynamodb
+    ports:
+      - "8000:${PORT:-8000}"
+    volumes:
+      - dynamodb-volume:/dynamodb_local_db
+    command: "-Djava.library.path=. -jar DynamoDBLocal.jar --sharedDb -optimizeDbBeforeStartup -dbPath /dynamodb_local_db -port ${DYNAMODB_PORT:-8000} -cors ${DYNAMODB_CORS:-*}"
+    env_file:
+      - "./dynamodb/compose${DOCKER_DYNAMODB_ENV_LOCAL}.env"
