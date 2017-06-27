@@ -10,6 +10,9 @@ volumes:
       - "gov.usgs.wma.docker.description=DynamoDB Docker Volume"
       - "gov.usgs.wma.docker.name=volume.dynamodb"
   vault-volume:
+    labels:
+      - "gov.usgs.wma.docker.description=Hashicorp Vault Docker Volume"
+      - "gov.usgs.wma.docker.name=volume.vault"
 
 services:
   dynamodb:
@@ -29,27 +32,80 @@ services:
     env_file:
       - "./dynamodb/compose${DOCKER_DYNAMODB_ENV_LOCAL}.env"
 
-  vault:
+  vault1:
     build:
       context: ./vault
-    container_name: vault
+    container_name: vault1
     image: vault_dev
     networks:
       vault-network:
         aliases:
-          - vault
+          - vault1.container
     cap_add:
       - IPC_LOCK
     ports:
-      - "8200:${VAULT_SERVER_PORT:-8200}"
-      - "8201:${VAULT_CLUSTER_PORT:-8201}"
-      - "8125:${VAULT_TELEMETRY_PORT:-8125}"
+      - "8200:${VAULT1_SERVER_PORT:-8200}"
+      - "8201:${VAULT1_CLUSTER_PORT:-8201}"
+      - "8125:${VAULT1_TELEMETRY_PORT:-8125}"
     volumes:
       - "vault-volume:/vault/logs"
       - "vault-volume:/vault/file"
       - "./vault/data/config:/vault/config"
-    command: "vault server -config=/vault/config/local.json"
+      - "./vault/data/certs:/vault/certs"
+    command: "vault server -config=/vault/config/vault1.json"
     env_file:
-      - "./vault/compose${DOCKER_VAULT_ENV_LOCAL}.env"
+      - "./vault/vault1_compose${DOCKER_VAULT1_ENV_LOCAL}.env"
+    depends_on:
+      - dynamodb
+
+  vault2:
+    build:
+      context: ./vault
+    container_name: vault2
+    image: vault_dev
+    networks:
+      vault-network:
+        aliases:
+          - vault2.container
+    cap_add:
+      - IPC_LOCK
+    ports:
+      - "8202:${VAULT2_SERVER_PORT:-8200}"
+      - "8203:${VAULT2_CLUSTER_PORT:-8201}"
+      - "8126:${VAULT2_TELEMETRY_PORT:-8125}"
+    volumes:
+      - "vault-volume:/vault/logs"
+      - "vault-volume:/vault/file"
+      - "./vault/data/config:/vault/config"
+      - "./vault/data/certs:/vault/certs"
+    command: "vault server -config=/vault/config/vault1.json"
+    env_file:
+      - "./vault/vault2_compose${DOCKER_VAULT2_ENV_LOCAL}.env"
+    depends_on:
+      - dynamodb
+
+  vault3:
+    build:
+      context: ./vault
+    container_name: vault3
+    image: vault_dev
+    networks:
+      vault-network:
+        aliases:
+          - vault3.container
+    cap_add:
+      - IPC_LOCK
+    ports:
+      - "8204:${VAULT3_SERVER_PORT:-8200}"
+      - "8205:${VAULT3_CLUSTER_PORT:-8201}"
+      - "8127:${VAULT3_TELEMETRY_PORT:-8125}"
+    volumes:
+      - "vault-volume:/vault/logs"
+      - "vault-volume:/vault/file"
+      - "./vault/data/config:/vault/config"
+      - "./vault/data/certs:/vault/certs"
+    command: "vault server -config=/vault/config/vault3.json"
+    env_file:
+      - "./vault/vault3_compose${DOCKER_VAULT3_ENV_LOCAL}.env"
     depends_on:
       - dynamodb
