@@ -1,5 +1,5 @@
 .DS_Store
 !.keep
-data/registry
-root.crt
+vault/data/logs/
+vault/data/file/
 *_local.env

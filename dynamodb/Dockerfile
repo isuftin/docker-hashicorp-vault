@@ -18,4 +18,4 @@ ENTRYPOINT ["java"]
 
 CMD ["-Djava.library.path=.", "-jar", "DynamoDBLocal.jar",  "--sharedDb", "-optimizeDbBeforeStartup", "-dbPath", "/dynamodb_local_db", "-port", "8000", "-cors", "*"]
 
-HEALTHCHECK --interval=30s --timeout=3s CMD aws dynamodb list-tables --endpoint-url http://127.0.0.1:${PORT:-8000} || exit 1
+HEALTHCHECK --interval=30s --timeout=3s CMD aws dynamodb list-tables --endpoint-url http://127.0.0.1:${DYNAMODB_PORT:-8000} || exit 1
