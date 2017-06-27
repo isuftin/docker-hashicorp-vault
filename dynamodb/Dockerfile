@@ -8,7 +8,11 @@ RUN apt-get -y install python python-pip libyaml-dev python-dev
 
 RUN apt-get -y autoclean && apt-get -y --purge autoremove
 
-RUN pip install --upgrade awscli
+COPY /data/certs/${ROOT_FILENAME:-root.pem} /root.pem
+
+RUN pip --cert /root.pem install --upgrade pip
+
+RUN pip --cert /root.pem install awscli
 
 ENV AWS_ACCESS_KEY_ID ${AWS_ACCESS_KEY_ID:-"anything"}
 ENV AWS_SECRET_ACCESS_KEY ${AWS_SECRET_ACCESS_KEY:-"anything"}
