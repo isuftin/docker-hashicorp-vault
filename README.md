@@ -1,6 +1,6 @@
 # Hashicorp Vault HA Docker Configuration
 
-## DynamoDB
+# DynamoDB
 
 DynamoDB is used in this project to provide the storage back-end for Vault which
 allows Vault to work in High Availability (HA) mode.
@@ -85,7 +85,7 @@ $
 
 ### CLI access to DynamoDB
 
-The DynamoDB is configured with AWS installed. You can use the containerized AWS
+The DynamoDB is configured with AWS cli installed. You can use the containerized AWS
 commandline client against DynamoDB from outside of the container if you wish.
 
 Here is an example of doing so:
@@ -109,7 +109,7 @@ In the command line, set the endpoint-url IP to the IP of your Docker Machine VM
 (use the `docker-machine ip` command to discover the IP). So the above command on
 your local host would look like (assuming your Docker Machine VM name is vault-dev):
 
-    $ docker exec -t vault_dynamodb aws dynamodb list-tables --endpoint-url http://`docker-machine ip vault-dev`:8000
+    $ aws dynamodb list-tables --endpoint-url http://`docker-machine ip vault-dev`:8000
 
 
 #### <a name="dynamodb-intercept-ssl)"></a>Intercept SSL certificate
@@ -118,3 +118,17 @@ Add your SSL root certificate into `dynamodb/data/certs/root.pem` when building 
 Docker container. This allows the container to use your corporate SSL intercept
 certificate to pull from Python repositories to upgrade pip and install the AWS
 commandline client.
+
+# Vault
+
+#### Creating certificates for TLS
+
+```
+$ openssl genrsa -out vault/data/certs/wildcard.key 2048
+$ openssl req -nodes -newkey rsa:2048 -keyout vault/data/certs/wildcard.key -out vault/data/certs/wildcard.csr -subj "/C=US/ST=Wisconsin/L=Middleon/O=US Geological Survey/OU=WMA/CN=*.container"
+$ openssl x509 -req -days 9999 -in vault/data/certs/wildcard.csr -signkey vault/data/certs/wildcard.key  -out vault/data/certs/wildcard.crt
+```
+
+#### Initializing
+
+#### Unsealing

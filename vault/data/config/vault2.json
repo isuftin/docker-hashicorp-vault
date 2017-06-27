@@ -1,0 +1,27 @@
+{
+  "backend": {
+    "file": {
+      "path": "/vault/file"
+    }
+  },
+  "listener": {
+    "tcp": {
+      "address": "0.0.0.0:8200",
+      "tls_disable": "0",
+      "tls_cert_file": "/vault/certs/wildcard.crt",
+      "tls_key_file": "/vault/certs/wildcard.key"
+    }
+  },
+  "storage": {
+    "dynamodb": {
+      "endpoint": "http://dynamodb:8000",
+      "ha_enabled": "true",
+      "table": "vault-data",
+      "redirect_addr": "http://vault1.container:8200"
+    }
+  },
+  "default_lease_ttl": "168h",
+  "max_lease_ttl": "720h",
+  "cluster_name": "testcluster",
+  "ui": "true"
+}
