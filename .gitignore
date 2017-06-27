@@ -3,3 +3,4 @@
 vault/data/logs/
 vault/data/file/
 *_local.env
+root.pem

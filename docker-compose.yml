@@ -6,6 +6,9 @@ networks:
 
 volumes:
   dynamodb-volume:
+    labels:
+      - "gov.usgs.wma.docker.description=DynamoDB Docker Volume"
+      - "gov.usgs.wma.docker.name=volume.dynamodb"
   vault-volume:
 
 services:
