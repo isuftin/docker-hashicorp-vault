@@ -9,3 +9,4 @@ and this project adheres to [Semantic Versioning](http://semver.org/).
  - isuftin@usgs.gov - Created a DynamoDB container configuration for use with Vault HA
  - isuftin@usgs.gov - Created a Vault HA container configuration
  - isuftin@usgs.gov - Created a wildcart certificate pair for Vault HA
+ - isuftin@usgs.gov - Added Consul clustering into the mix - Vault now uses Consul for high availability
