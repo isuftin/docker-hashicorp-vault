@@ -1,6 +1,38 @@
 ---
 version: '3.3'
 
+configs:
+  consul_server_config:
+    file: ./consul/data/server_config.json
+  consul_node_1_config:
+    file: ./consul/data/node1_config.json
+  consul_node_2_config:
+    file: ./consul/data/node2_config.json
+  consul_node_3_config:
+    file: ./consul/data/node3_config.json
+  vault_config:
+    file: ./vault/data/config/vault.json
+
+secrets:
+  consul_ca_file.cer:
+    file: ./consul/data/certificates/consul-root.cer
+  consul_cert_file.cer:
+    file: ./consul/data/certificates/consul-server.cer
+  consul_key_file.key:
+    file: ./consul/data/certificates/consul-server.key
+  consul_secrets_config.json:
+    file: ./consul/data/secrets_config.json
+  vault_cert_file.crt:
+    file: ./vault/data/certs/wildcard.crt
+  vault_key_file.key:
+    file: ./vault/data/certs/wildcard.key
+  vault_tls_ca_file.cer:
+    file: ./consul/data/certificates/consul-root.cer
+  vault_tls_cert_file.cer:
+    file: ./consul/data/certificates/consul-server.cer
+  vault_tls_key_file.key:
+    file: ./consul/data/certificates/consul-server.key
+
 networks:
   vault-network:
 
@@ -16,77 +48,77 @@ volumes:
 
 services:
   consul_node_1:
-    image: consul:0.8.5
-    container_name: vault_consul_node1
+    image: consul:0.9.0
     networks:
       vault-network:
         aliases:
           - consul.1.container
-    volumes:
-      - "./consul/data/:/data"
-    command: "consul agent -config-file=/data/node1_config.json"
+    # environment:
+    #   - "CONSUL_CLIENT_INTERFACE=eth0"
+    #   - "CONSUL_BIND_INTERFACE=eth1"
+    command: "consul agent -config-dir=/data/config -config-file=/run/secrets/consul_secrets_config.json"
     ports:
       - "8500:8500"
       - "8700:8700"
+    configs:
+      - source: consul_node_1_config
+        target: /data/config/node1_config.json
+      - source: consul_server_config
+        target: /data/config/config.json
+    secrets:
+      - consul_ca_file.cer
+      - consul_cert_file.cer
+      - consul_key_file.key
+      - consul_secrets_config.json
+
   consul_node_2:
-    image: consul:0.8.5
-    container_name: vault_consul_node2
+    image: consul:0.9.0
     networks:
       vault-network:
         aliases:
           - consul.2.container
-    volumes:
-      - "./consul/data/:/data"
-    command: "consul agent -config-file=/data/node2_config.json"
+    command: "consul agent -config-dir=/data/config -config-file=/run/secrets/consul_secrets_config.json"
     ports:
       - "8501:8500"
       - "8701:8701"
-    depends_on:
-      - consul_node_1
+    configs:
+      - source: consul_node_2_config
+        target: /data/config/node2_config.json
+      - source: consul_server_config
+        target: /data/config/config.json
+    secrets:
+      - consul_ca_file.cer
+      - consul_cert_file.cer
+      - consul_key_file.key
+      - consul_secrets_config.json
+
   consul_node_3:
-    image: consul:0.8.5
-    container_name: vault_consul_node3
+    image: consul:0.9.0
     networks:
       vault-network:
         aliases:
           - consul.3.container
-    volumes:
-      - "./consul/data/:/data"
-    command: "consul agent -config-file=/data/node3_config.json"
+    command: "consul agent -config-dir=/data/config -config-file=/run/secrets/consul_secrets_config.json"
     ports:
       - "8502:8500"
       - "8702:8702"
-    depends_on:
-      - consul_node_1
-
-  dynamodb:
-    build:
-      context: ./dynamodb
-    container_name: vault_dynamodb
-    image: vault_dynamodb
-    networks:
-      vault-network:
-        aliases:
-          - dynamodb
-    ports:
-      - "8000:${DYNAMODB_PORT:-8000}"
-    volumes:
-      - dynamodb-volume:/dynamodb_local_db
-    command: "-Djava.library.path=. -jar DynamoDBLocal.jar --sharedDb -optimizeDbBeforeStartup -dbPath /dynamodb_local_db -port ${DYNAMODB_PORT:-8000} -cors ${DYNAMODB_CORS:-*}"
-    env_file:
-      - "./dynamodb/compose${DOCKER_DYNAMODB_ENV_LOCAL}.env"
+    configs:
+      - source: consul_node_3_config
+        target: /data/config/node3_config.json
+      - source: consul_server_config
+        target: /data/config/config.json
+    secrets:
+      - consul_ca_file.cer
+      - consul_cert_file.cer
+      - consul_key_file.key
+      - consul_secrets_config.json
 
   vault1:
-    build:
-      context: ./vault
-    container_name: vault1
-    image: vault_dev
+    image: vault:0.7.3
     networks:
       vault-network:
         aliases:
           - vault1.container
-    cap_add:
-      - IPC_LOCK
     ports:
       - "8200:${VAULT1_SERVER_PORT:-8200}"
       - "8201:${VAULT1_CLUSTER_PORT:-8201}"
@@ -94,25 +126,29 @@ services:
     volumes:
       - "vault-volume:/vault/logs"
       - "vault-volume:/vault/file"
-      - "./vault/data/config:/vault/config"
-      - "./vault/data/certs:/vault/certs"
-    command: "vault server -config=/vault/config/vault1.json"
-    env_file:
-      - "./vault/vault1_compose${DOCKER_VAULT1_ENV_LOCAL}.env"
+    command: "vault server -config=/vault/config/vault.json"
+    environment:
+      - VAULT_REDIRECT_ADDR=https://vault1.container:8200
+    configs:
+      - source: vault_config
+        target: /vault/config/vault.json
+    secrets:
+      - vault_cert_file.crt
+      - vault_key_file.key
+      - vault_tls_ca_file.cer
+      - vault_tls_cert_file.cer
+      - vault_tls_key_file.key
     depends_on:
-      - dynamodb
+      - consul_node_1
+      - consul_node_2
+      - consul_node_3
 
   vault2:
-    build:
-      context: ./vault
-    container_name: vault2
-    image: vault_dev
+    image: vault:0.7.3
     networks:
       vault-network:
         aliases:
           - vault2.container
-    cap_add:
-      - IPC_LOCK
     ports:
       - "8202:${VAULT2_SERVER_PORT:-8200}"
       - "8203:${VAULT2_CLUSTER_PORT:-8201}"
@@ -120,25 +156,29 @@ services:
     volumes:
       - "vault-volume:/vault/logs"
       - "vault-volume:/vault/file"
-      - "./vault/data/config:/vault/config"
-      - "./vault/data/certs:/vault/certs"
-    command: "vault server -config=/vault/config/vault1.json"
-    env_file:
-      - "./vault/vault2_compose${DOCKER_VAULT2_ENV_LOCAL}.env"
+    command: "vault server -config=/vault/config/vault.json"
+    environment:
+      - VAULT_REDIRECT_ADDR=https://vault2.container:8200
+    configs:
+      - source: vault_config
+        target: /vault/config/vault.json
+    secrets:
+      - vault_cert_file.crt
+      - vault_key_file.key
+      - vault_tls_ca_file.cer
+      - vault_tls_cert_file.cer
+      - vault_tls_key_file.key
     depends_on:
-      - dynamodb
+      - consul_node_1
+      - consul_node_2
+      - consul_node_3
 
   vault3:
-    build:
-      context: ./vault
-    container_name: vault3
-    image: vault_dev
+    image: vault:0.7.3
     networks:
       vault-network:
         aliases:
           - vault3.container
-    cap_add:
-      - IPC_LOCK
     ports:
       - "8204:${VAULT3_SERVER_PORT:-8200}"
       - "8205:${VAULT3_CLUSTER_PORT:-8201}"
@@ -146,10 +186,19 @@ services:
     volumes:
       - "vault-volume:/vault/logs"
       - "vault-volume:/vault/file"
-      - "./vault/data/config:/vault/config"
-      - "./vault/data/certs:/vault/certs"
-    command: "vault server -config=/vault/config/vault3.json"
-    env_file:
-      - "./vault/vault3_compose${DOCKER_VAULT3_ENV_LOCAL}.env"
+    command: "vault server -config=/vault/config/vault.json"
+    environment:
+      - VAULT_REDIRECT_ADDR=https://vault3.container:8200
+    configs:
+      - source: vault_config
+        target: /vault/config/vault.json
+    secrets:
+      - vault_cert_file.crt
+      - vault_key_file.key
+      - vault_tls_ca_file.cer
+      - vault_tls_cert_file.cer
+      - vault_tls_key_file.key
     depends_on:
-      - dynamodb
+      - consul_node_1
+      - consul_node_2
+      - consul_node_3
