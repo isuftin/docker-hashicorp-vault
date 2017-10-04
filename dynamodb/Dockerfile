@@ -10,9 +10,11 @@ RUN apt-get -y autoclean && apt-get -y --purge autoremove
 
 COPY /data/certs/${ROOT_FILENAME:-root.pem} /root.pem
 
-RUN pip --cert /root.pem install --upgrade pip
+# On networks that do not use SSL intercept, using the --cert flag will fail
+# pip installations. So here we try with and without certs 
+RUN pip --cert /root.pem install --upgrade pip || pip install --upgrade pip
 
-RUN pip --cert /root.pem install awscli
+RUN pip --cert /root.pem install awscli || pip install awscli
 
 ENV AWS_ACCESS_KEY_ID ${AWS_ACCESS_KEY_ID:-"anything"}
 ENV AWS_SECRET_ACCESS_KEY ${AWS_SECRET_ACCESS_KEY:-"anything"}

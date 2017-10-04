@@ -1,5 +1,5 @@
 ---
-version: '3'
+version: '3.1'
 
 networks:
   vault-network:
@@ -15,6 +15,50 @@ volumes:
       - "gov.usgs.wma.docker.name=volume.vault"
 
 services:
+  consul_node_1:
+    image: consul:0.8.5
+    container_name: vault_consul_node1
+    networks:
+      vault-network:
+        aliases:
+          - consul.1.container
+    volumes:
+      - "./consul/data/:/data"
+    command: "consul agent -config-file=/data/node1_config.json"
+    ports:
+      - "8500:8500"
+      - "8700:8700"
+  consul_node_2:
+    image: consul:0.8.5
+    container_name: vault_consul_node2
+    networks:
+      vault-network:
+        aliases:
+          - consul.2.container
+    volumes:
+      - "./consul/data/:/data"
+    command: "consul agent -config-file=/data/node2_config.json"
+    ports:
+      - "8501:8500"
+      - "8701:8701"
+    depends_on:
+      - consul_node_1
+  consul_node_3:
+    image: consul:0.8.5
+    container_name: vault_consul_node3
+    networks:
+      vault-network:
+        aliases:
+          - consul.3.container
+    volumes:
+      - "./consul/data/:/data"
+    command: "consul agent -config-file=/data/node3_config.json"
+    ports:
+      - "8502:8500"
+      - "8702:8702"
+    depends_on:
+      - consul_node_1
+
   dynamodb:
     build:
       context: ./dynamodb
