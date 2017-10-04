@@ -83,6 +83,7 @@ services:
       - "./vault/vault2_compose${DOCKER_VAULT2_ENV_LOCAL}.env"
     depends_on:
       - dynamodb
+      - vault1
 
   vault3:
     build:
@@ -109,3 +110,5 @@ services:
       - "./vault/vault3_compose${DOCKER_VAULT3_ENV_LOCAL}.env"
     depends_on:
       - dynamodb
+      - vault1
+      - vault2
