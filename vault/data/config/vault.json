@@ -1,0 +1,26 @@
+{
+  "listener": {
+    "tcp": {
+      "address": "0.0.0.0:8200",
+      "tls_disable": "0",
+      "tls_cert_file": "/run/secrets/vault_cert_file.crt",
+      "tls_key_file": "/run/secrets/vault_key_file.key"
+    }
+  },
+  "storage" : {
+    "consul" : {
+      "address" : "agent.consul.swarm.container:8701",
+      "path" : "vault/",
+      "service" : "vault",
+      "redirect_addr" : "https://vault.swarm.container:8200",
+      "scheme" : "https",
+      "tls_ca_file" : "/run/secrets/vault_tls_ca_file.cer",
+      "tls_cert_file" : "/run/secrets/vault_tls_cert_file.cer",
+      "tls_key_file" : "/run/secrets/vault_tls_key_file.key",
+      "tls_skip_verify" : "false"
+    }
+  },
+  "cluster_name": "testcluster",
+  "ui": "true",
+  "disable_mlock": "true"
+}

@@ -1,0 +1,9 @@
+{
+  "node_meta": {
+      "instance_type": "Docker container"
+  },
+  "ports" : {
+    "https" : 8701
+  },
+  "server" : false
+}

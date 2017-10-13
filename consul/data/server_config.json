@@ -1,0 +1,11 @@
+{
+  "bootstrap_expect": 3,
+  "node_meta": {
+      "instance_type": "Docker container"
+  },
+  "ports" : {
+    "https" : 8700
+  },
+  "server" : true,
+  "ui" : true
+}
