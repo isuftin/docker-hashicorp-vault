@@ -21,7 +21,6 @@ array=( worker1 worker2 worker3 )
 for machine in "${array[@]}"
 do
   docker-machine ssh $machine docker swarm join --token $WORKER_JOIN_TOKEN $MANAGER_IP:2377
- $machine
 done
 
 # Prepare to send a docker command to the manager from the local CLI

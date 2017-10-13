@@ -1,0 +1,37 @@
+{
+  "addresses" : {
+    "https" : "0.0.0.0"
+  },
+  "advertise_addr" : "{{ GetInterfaceIP \"eth2\" }}",
+  "bind_addr": "{{ GetInterfaceIP \"eth2\" }}",
+  "check_update_interval": "1m",
+  "client_addr": "0.0.0.0",
+  "data_dir": "/tmp/consul",
+  "disable_remote_exec": true,
+  "disable_update_check": true,
+  "ca_file": "/run/secrets/consul_ca_file.cer",
+  "cert_file": "/run/secrets/consul_cert_file.cer",
+  "key_file": "/run/secrets/consul_key_file.key",
+  "verify_outgoing" : true,
+  "verify_incoming_https" : false,
+  "verify_incoming_rpc" : true,
+  "verify_server_hostname" : false,
+  "encrypt_verify_incoming" : true,
+  "encrypt_verify_outgoing" : true,
+  "datacenter": "docker_dc",
+  "disable_host_node_id" : true,
+  "http_config": {
+    "response_headers": {
+      "Access-Control-Allow-Origin": "*"
+    }
+  },
+  "leave_on_terminate" : true,
+  "retry_interval" : "10s",
+  "retry_join" : [ 
+  	"server.consul.swarm.container:8301",
+  	"server.consul.swarm.container:8301",
+  	"server.consul.swarm.container:8301"
+  ],
+  "server_name" : "server.docker_dc.consul",
+  "skip_leave_on_interrupt" : true
+}

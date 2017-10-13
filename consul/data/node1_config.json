@@ -1,4 +1,0 @@
-{
-  "node_name" : "consul.1.container",
-  "retry_join" : [ "consul.2.container:8301","consul.3.container:8301" ]
-}

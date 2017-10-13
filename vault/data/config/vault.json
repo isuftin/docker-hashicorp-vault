@@ -1,9 +1,4 @@
 {
-  "backend": {
-    "file": {
-      "path": "/vault/file"
-    }
-  },
   "listener": {
     "tcp": {
       "address": "0.0.0.0:8200",
@@ -12,11 +7,12 @@
       "tls_key_file": "/run/secrets/vault_key_file.key"
     }
   },
-  "ha_storage": {
+  "storage" : {
     "consul" : {
-      "address" : "consul.1.container:8700",
+      "address" : "agent.consul.swarm.container:8701",
       "path" : "vault/",
-      "redirect_addr" : "https://vault1.container:8200",
+      "service" : "vault",
+      "redirect_addr" : "https://vault.swarm.container:8200",
       "scheme" : "https",
       "tls_ca_file" : "/run/secrets/vault_tls_ca_file.cer",
       "tls_cert_file" : "/run/secrets/vault_tls_cert_file.cer",
@@ -24,8 +20,6 @@
       "tls_skip_verify" : "false"
     }
   },
-  "default_lease_ttl": "168h",
-  "max_lease_ttl": "720h",
   "cluster_name": "testcluster",
   "ui": "true",
   "disable_mlock": "true"

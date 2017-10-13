@@ -4,12 +4,10 @@ version: '3.3'
 configs:
   consul_server_config:
     file: ./consul/data/server_config.json
-  consul_node_1_config:
-    file: ./consul/data/node1_config.json
-  consul_node_2_config:
-    file: ./consul/data/node2_config.json
-  consul_node_3_config:
-    file: ./consul/data/node3_config.json
+  consul_agent_config:
+    file: ./consul/data/agent_config.json
+  common_config:
+    file: ./consul/data/common.json
   vault_config:
     file: ./vault/data/config/vault.json
 
@@ -23,9 +21,9 @@ secrets:
   consul_secrets_config.json:
     file: ./consul/data/secrets_config.json
   vault_cert_file.crt:
-    file: ./vault/data/certs/wildcard.crt
+    file: ./vault/data/swarm_certs/wildcard.crt
   vault_key_file.key:
-    file: ./vault/data/certs/wildcard.key
+    file: ./vault/data/swarm_certs/wildcard.key
   vault_tls_ca_file.cer:
     file: ./consul/data/certificates/consul-root.cer
   vault_tls_cert_file.cer:
@@ -37,54 +35,40 @@ networks:
   vault-network:
 
 volumes:
-  dynamodb-volume:
-    labels:
-      - "gov.usgs.wma.docker.description=DynamoDB Docker Volume"
-      - "gov.usgs.wma.docker.name=volume.dynamodb"
   vault-volume:
     labels:
       - "gov.usgs.wma.docker.description=Hashicorp Vault Docker Volume"
       - "gov.usgs.wma.docker.name=volume.vault"
 
 services:
-  consul_node_1:
-    image: consul:0.9.0
+  consul_agent:
+    image: consul:0.9.3
     networks:
       vault-network:
         aliases:
-          - consul.1.container
-    # environment:
-    #   - "CONSUL_CLIENT_INTERFACE=eth0"
-    #   - "CONSUL_BIND_INTERFACE=eth1"
+          - agent.consul.swarm.container
     command: "consul agent -config-dir=/data/config -config-file=/run/secrets/consul_secrets_config.json"
     ports:
-      - "8500:8500"
-      - "8700:8700"
-    configs:
-      - source: consul_node_1_config
-        target: /data/config/node1_config.json
-      - source: consul_server_config
-        target: /data/config/config.json
-    secrets:
-      - consul_ca_file.cer
-      - consul_cert_file.cer
-      - consul_key_file.key
-      - consul_secrets_config.json
-
-  consul_node_2:
-    image: consul:0.9.0
-    networks:
-      vault-network:
-        aliases:
-          - consul.2.container
-    command: "consul agent -config-dir=/data/config -config-file=/run/secrets/consul_secrets_config.json"
-    ports:
-      - "8501:8500"
       - "8701:8701"
+    deploy:
+      mode: replicated
+      replicas: 1
+      update_config:
+        parallelism: 1
+        failure_action: pause
+        delay: 10s
+      restart_policy:
+        condition: on-failure
+        delay: 5s
+        max_attempts: 3
+        window: 120s
+      placement:
+        constraints:
+          - node.role == worker
     configs:
-      - source: consul_node_2_config
-        target: /data/config/node2_config.json
-      - source: consul_server_config
+      - source: common_config
+        target: /data/config/node_swarm_config.json
+      - source: consul_agent_config
         target: /data/config/config.json
     secrets:
       - consul_ca_file.cer
@@ -92,19 +76,33 @@ services:
       - consul_key_file.key
       - consul_secrets_config.json
 
-  consul_node_3:
-    image: consul:0.9.0
+  consul_server:
+    image: consul:0.9.3
     networks:
       vault-network:
         aliases:
-          - consul.3.container
+          - server.consul.swarm.container
     command: "consul agent -config-dir=/data/config -config-file=/run/secrets/consul_secrets_config.json"
     ports:
-      - "8502:8500"
-      - "8702:8702"
+      - "8700:8700"
+    deploy:
+      mode: replicated
+      replicas: 3
+      update_config:
+        parallelism: 1
+        failure_action: pause
+        delay: 10s
+      restart_policy:
+        condition: on-failure
+        delay: 5s
+        max_attempts: 3
+        window: 120s
+      placement:
+        constraints:
+          - node.role == worker
     configs:
-      - source: consul_node_3_config
-        target: /data/config/node3_config.json
+      - source: common_config
+        target: /data/config/node_swarm_config.json
       - source: consul_server_config
         target: /data/config/config.json
     secrets:
@@ -112,23 +110,27 @@ services:
       - consul_cert_file.cer
       - consul_key_file.key
       - consul_secrets_config.json
-
-  vault1:
-    image: vault:0.7.3
+  
+  vault:
+    image: vault:0.8.3
     networks:
       vault-network:
         aliases:
-          - vault1.container
+          - vault.swarm.container
+    deploy:
+      mode: replicated
+      replicas: 3
+      placement:
+        constraints:
+          - node.role == worker
     ports:
-      - "8200:${VAULT1_SERVER_PORT:-8200}"
-      - "8201:${VAULT1_CLUSTER_PORT:-8201}"
-      - "8125:${VAULT1_TELEMETRY_PORT:-8125}"
-    volumes:
-      - "vault-volume:/vault/logs"
-      - "vault-volume:/vault/file"
-    command: "vault server -config=/vault/config/vault.json"
+      - "8200:8200"
+      - "8201:8201"
+      - "8125:8125"
     environment:
-      - VAULT_REDIRECT_ADDR=https://vault1.container:8200
+      - VAULT_REDIRECT_INTERFACE=eth2
+      - VAULT_CLUSTER_INTERFACE=eth2
+    command: "vault server -config=/vault/config/vault.json"
     configs:
       - source: vault_config
         target: /vault/config/vault.json
@@ -138,67 +140,22 @@ services:
       - vault_tls_ca_file.cer
       - vault_tls_cert_file.cer
       - vault_tls_key_file.key
-    depends_on:
-      - consul_node_1
-      - consul_node_2
-      - consul_node_3
 
-  vault2:
-    image: vault:0.7.3
+  vault_ui:
+    image: djenriquez/vault-ui:2.3.0
     networks:
       vault-network:
         aliases:
-          - vault2.container
+          - vault.ui.container
+    deploy:
+      mode: replicated
+      replicas: 1
+      placement:
+        constraints:
+          - node.role == worker
     ports:
-      - "8202:${VAULT2_SERVER_PORT:-8200}"
-      - "8203:${VAULT2_CLUSTER_PORT:-8201}"
-      - "8126:${VAULT2_TELEMETRY_PORT:-8125}"
-    volumes:
-      - "vault-volume:/vault/logs"
-      - "vault-volume:/vault/file"
-    command: "vault server -config=/vault/config/vault.json"
+      - "8000:8000"
     environment:
-      - VAULT_REDIRECT_ADDR=https://vault2.container:8200
-    configs:
-      - source: vault_config
-        target: /vault/config/vault.json
-    secrets:
-      - vault_cert_file.crt
-      - vault_key_file.key
-      - vault_tls_ca_file.cer
-      - vault_tls_cert_file.cer
-      - vault_tls_key_file.key
-    depends_on:
-      - consul_node_1
-      - consul_node_2
-      - consul_node_3
-
-  vault3:
-    image: vault:0.7.3
-    networks:
-      vault-network:
-        aliases:
-          - vault3.container
-    ports:
-      - "8204:${VAULT3_SERVER_PORT:-8200}"
-      - "8205:${VAULT3_CLUSTER_PORT:-8201}"
-      - "8127:${VAULT3_TELEMETRY_PORT:-8125}"
-    volumes:
-      - "vault-volume:/vault/logs"
-      - "vault-volume:/vault/file"
-    command: "vault server -config=/vault/config/vault.json"
-    environment:
-      - VAULT_REDIRECT_ADDR=https://vault3.container:8200
-    configs:
-      - source: vault_config
-        target: /vault/config/vault.json
-    secrets:
-      - vault_cert_file.crt
-      - vault_key_file.key
-      - vault_tls_ca_file.cer
-      - vault_tls_cert_file.cer
-      - vault_tls_key_file.key
-    depends_on:
-      - consul_node_1
-      - consul_node_2
-      - consul_node_3
+      - VAULT_URL_DEFAULT=https://vault.swarm.container:8200
+      - NODE_TLS_REJECT_UNAUTHORIZED=0
+      - PORT=8000
