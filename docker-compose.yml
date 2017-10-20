@@ -18,8 +18,12 @@ secrets:
     file: ./consul/data/certificates/consul-server.cer
   consul_key_file.key:
     file: ./consul/data/certificates/consul-server.key
-  consul_secrets_config.json:
-    file: ./consul/data/secrets_config.json
+  consul_common_secrets_config.json:
+    file: ./consul/data/common_secrets_config.json
+  consul_server_secrets_config.json:
+    file: ./consul/data/server_secrets_config.json
+  consul_agent_secrets_config.json:
+    file: ./consul/data/agent_secrets_config.json
   vault_cert_file.crt:
     file: ./vault/data/swarm_certs/wildcard.crt
   vault_key_file.key:
@@ -47,12 +51,12 @@ services:
       vault-network:
         aliases:
           - agent.consul.swarm.container
-    command: "consul agent -config-dir=/data/config -config-file=/run/secrets/consul_secrets_config.json"
+    command: "consul agent -config-dir=/data/config -config-file=/run/secrets/consul_agent_secrets_config.json -config-file=/run/secrets/consul_common_secrets_config.json"
     ports:
       - "8701:8701"
     deploy:
       mode: replicated
-      replicas: 1
+      replicas: 0
       update_config:
         parallelism: 1
         failure_action: pause
@@ -74,7 +78,8 @@ services:
       - consul_ca_file.cer
       - consul_cert_file.cer
       - consul_key_file.key
-      - consul_secrets_config.json
+      - consul_common_secrets_config.json
+      - consul_agent_secrets_config.json
 
   consul_server:
     image: consul:0.9.3
@@ -82,9 +87,9 @@ services:
       vault-network:
         aliases:
           - server.consul.swarm.container
-    command: "consul agent -config-dir=/data/config -config-file=/run/secrets/consul_secrets_config.json"
+    command: "consul agent -config-dir=/data/config -config-file=/run/secrets/consul_server_secrets_config.json -config-file=/run/secrets/consul_common_secrets_config.json"
     ports:
-      - "8700:8700"
+      - "8443:8443"
     deploy:
       mode: replicated
       replicas: 3
@@ -109,8 +114,9 @@ services:
       - consul_ca_file.cer
       - consul_cert_file.cer
       - consul_key_file.key
-      - consul_secrets_config.json
-  
+      - consul_common_secrets_config.json
+      - consul_server_secrets_config.json
+
   vault:
     image: vault:0.8.3
     networks:
@@ -119,7 +125,7 @@ services:
           - vault.swarm.container
     deploy:
       mode: replicated
-      replicas: 3
+      replicas: 0
       placement:
         constraints:
           - node.role == worker
@@ -142,14 +148,14 @@ services:
       - vault_tls_key_file.key
 
   vault_ui:
-    image: djenriquez/vault-ui:2.3.0
+    image: djenriquez/vault-ui:2.4.0-rc3
     networks:
       vault-network:
         aliases:
           - vault.ui.container
     deploy:
       mode: replicated
-      replicas: 1
+      replicas: 0
       placement:
         constraints:
           - node.role == worker

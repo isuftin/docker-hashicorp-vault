@@ -1,6 +1,7 @@
 {
+  "acl_down_policy" : "extend-cache",
   "node_meta": {
-      "instance_type": "Docker container"
+      "instance_type": "Docker Consul server container"
   },
   "ports" : {
     "https" : 8701

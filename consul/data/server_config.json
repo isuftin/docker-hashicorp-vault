@@ -1,10 +1,11 @@
 {
   "bootstrap_expect": 3,
+  "enable_debug": true,
   "node_meta": {
-      "instance_type": "Docker container"
+      "instance_type": "Docker Consul server container"
   },
   "ports" : {
-    "https" : 8700
+    "https" : 8443
   },
   "server" : true,
   "ui" : true
