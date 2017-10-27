@@ -6,13 +6,11 @@ Vault HA will use Consul as the high availability back-end for clustering purpos
 
 #### Creating certificates for TLS
 
-The wildcard certificates included in this project are to allow Consul to operate using SSL. You probably will not need to alter anything here but in any case, this is how they were created. In order to follow along, you will need openssl
-installed on your system.
+The wildcard certificates included in this project are to allow Consul to operate using SSL. You probably will not need to alter anything here but in any case, this is how they were created. In order to follow along, you will need openssl installed on your system.
 
-I've added a custom openssl.conf file into the `consul/data/certificates` directory.
-This configuration is necessary to create a Certificate Authority cert as well as provide the necessary openssl extensions required by Consul in order to work over TLS.
+I've added a custom openssl.conf file into the `consul/data/certificates` directory. This configuration is necessary to create a Certificate Authority cert as well as provide the necessary openssl extensions required by Consul in order to work over TLS.
 
-```
+```bash
 $ cd consul/data/certificates
 $ touch certindex
 $ echo 000a > serial
@@ -25,6 +23,16 @@ $ openssl ca -batch -config openssl.conf -notext -in consul-server.csr -out cons
 
 Note that the Common Name (CN) in the above configuration has the servers as `server.docker_dc.consul`. Consul expects servers to have their names as
 server.&lt;datacenter name&gt;.consul. The datacenter name is configured in the configuration files in `consul/data/node[1-3]_config.json`. If you change the data center name there, you will want to regenerate the certificates to match.
+
+NOTE: I've also included a script to automate the production of these SSL scripts. In Linux or MacOS, you can change your current working directory to `consul/data/certificates`. Next, you will add the executable bit to the shell script by issuing `chmod +x create_certificates.sh`. If you want to set your own subject for the certificates, create an environment variable named `SUBJ` and assign the subject to it like so: `SUBJ="/C=US/ST=Wisconsin/L=Middleon/O=US Geological Survey/OU=WMA/CN=server.docker_dc.consul"`. If you don't set a subject yourself, the subject will be that which is shown here as default. Finally, run the script by issuing `./create_certificates.sh`
+
+tl;dr:
+```bash
+$ cd consul/data/certificates
+$ chmod +x create_certificates.sh
+$ SUBJ="/C=US/ST=New York/L=Brooklyn/O=My Company Name/OU=My Company Division/CN=server.docker_dc.consul"
+$ ./create_certificates.sh
+```
 
 #### Starting Consul Cluster
 
